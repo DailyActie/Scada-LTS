@@ -1,17 +1,25 @@
 package org.scada_lts.cache;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.scada_lts.dao.DataPointDAO;
-
 import com.serotonin.mango.vo.DataPointVO;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.quartz.JobDetail;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.SimpleTrigger;
+import org.quartz.impl.StdSchedulerFactory;
+import org.scada_lts.config.ScadaConfig;
+import org.scada_lts.dao.DataPointDAO;
+import org.scada_lts.quartz.UpdateDataSourcesPoints;
+
+import java.io.IOException;
+import java.util.*;
 
 public class DataPointsCache implements IDataPointsCacheWhenStart {
+
+	private static final Log LOG = LogFactory.getLog(DataPointsCache.class);
 	
-	private boolean start = false;
+	private boolean cacheEnabled = false;
 	
 	private static DataPointsCache instance = null;
 	
@@ -30,7 +38,7 @@ public class DataPointsCache implements IDataPointsCacheWhenStart {
 
 	@Override
 	public List<DataPointVO> getDataPoints(Long dataSourceId) {
-		if (start) {
+		if (cacheEnabled) {
 			return dss.get(dataSourceId);
 		} else {
 			throw new RuntimeException("Cache may work only when scada start");
@@ -39,12 +47,56 @@ public class DataPointsCache implements IDataPointsCacheWhenStart {
 
 	@Override
 	public void cacheFinalized() {
-		start = false;
-		instance = null;
+		try {
+			if (ScadaConfig.getInstance().getBoolean(ScadaConfig.USE_CACHE_DATA_SOURCES_POINTS_WHEN_THE_SYSTEM_IS_READY, false)) {
+				cronInitialize();
+				cacheEnabled = true;
+			} else {
+				cacheEnabled = false;
+				instance = null;
+			}
+		} catch (IOException e) {
+			LOG.error(e);
+		} catch (SchedulerException se) {
+			LOG.error(se);
+		}
 	}
 
-	public boolean isStart() {
-		return start;
+	public void setData(Map<Long, List<DataPointVO>> dss) {
+		this.dss = dss;
+	}
+
+	@Override
+	public void cronInitialize() throws IOException, SchedulerException {
+		if (LOG.isTraceEnabled()) {
+			LOG.trace("cacheInitialize");
+		}
+		JobDetail job = new JobDetail();
+		job.setName("UpdateDataSourcesPoints");
+		job.setJobClass(UpdateDataSourcesPoints.class);
+
+		SimpleTrigger trigger = new SimpleTrigger();
+		Date startTime = new Date(System.currentTimeMillis()
+				+ ScadaConfig.getInstance().getLong(ScadaConfig.CRONE_UPDATE_CACHE_DATA_SOURCES_POINTS, 10_000_000));
+		if (LOG.isTraceEnabled()) {
+			LOG.trace("Quartz - startTime:" + startTime);
+		}
+		trigger.setStartTime(startTime);
+		trigger.setRepeatCount(SimpleTrigger.REPEAT_INDEFINITELY);
+		Long interval = 5_000_000L;
+		if (LOG.isTraceEnabled()) {
+			LOG.trace("Quartz - interval:" + interval);
+		}
+		trigger.setRepeatInterval(interval);
+		trigger.setName("Quartz - trigger-UpdateDataSourcesPoints");
+
+		Scheduler scheduler = new StdSchedulerFactory().getScheduler();
+		scheduler.start();
+		scheduler.scheduleJob(job, trigger);
+	}
+
+	public boolean isCacheEnabled() {
+		return cacheEnabled;
 	}
 
 	@Override
@@ -54,7 +106,7 @@ public class DataPointsCache implements IDataPointsCacheWhenStart {
 		
 		dss = composeCashData(dps);
 		
-		start = true;
+		cacheEnabled = true;
 	}
 	
 	public Map<Long, List<DataPointVO>> composeCashData(List<DataPointVO> dps) {

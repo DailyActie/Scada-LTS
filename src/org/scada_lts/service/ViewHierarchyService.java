@@ -17,10 +17,7 @@
  */
 package org.scada_lts.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
+import com.serotonin.mango.view.View;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.scada_lts.dao.GenericHierarchyDAO;
@@ -29,10 +26,11 @@ import org.scada_lts.dao.ViewHierarchyDAO;
 import org.scada_lts.dao.model.viewshierarchy.ViewHierarchyNode;
 import org.scada_lts.dao.model.viewshierarchy.ViewInViewHierarchyNode;
 import org.scada_lts.service.model.ViewHierarchyJSON;
-import org.slf4j.profiler.Profiler;
 import org.springframework.stereotype.Service;
 
-import com.serotonin.mango.view.View;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /** 
  * Service for views hierarchy.
@@ -44,8 +42,7 @@ import com.serotonin.mango.view.View;
 public class ViewHierarchyService {
 	
 	private static final Log LOG = LogFactory.getLog(ViewHierarchyService.class);
-	private Profiler profiler = new Profiler("ViewHierarchyService");
-	
+
 	private static final boolean FOLDER = true;
 	
 	public static final int ROOT_ID = -1;
@@ -98,10 +95,7 @@ public class ViewHierarchyService {
 					vhJSON.setKey(vhNodeInFolder.getViewId());
 					vhJSON.setChildren(null);
 					vhJSON.setFolder(false);
-					profiler.start("Get info view");
 					vhJSON.setTitle(viewDAO.findById(new Object[] { vhJSON.getKey() }).getName());
-					profiler.stop();
-					LOG.info("Started "+getClass().getSimpleName()+" in "+ getClass().getSimpleName() +"ms "+ profiler.elapsedTime() / 1000 / 1000);
 					tmpViewsInFolder.put(vhJSON.getKey(), new Boolean(true));
 					if (vhNode.getChildren() == null) {
 						vhNode.setChildren(new ArrayList<ViewHierarchyJSON>());
@@ -166,8 +160,7 @@ public class ViewHierarchyService {
 	
 	//TODO (userId profileId)
 	public List<ViewHierarchyJSON> getAll(){
-		profiler.start("correctChildrenViewHierarchyFolderJSON");
-		
+
 		List<ViewHierarchyNode> lstNodeDb = vhDAO.getNode(ViewHierarchyDAO.ROOT_ID);
 		List<ViewHierarchyJSON> lst = new ArrayList<ViewHierarchyJSON>();
 		
@@ -189,9 +182,7 @@ public class ViewHierarchyService {
 		for (View view: lstView) {
 			addViewInNotInViewHierarchy(lst, view, tmpViewInFolders);
 		}
-		profiler.stop();
-		LOG.info("Started "+getClass().getSimpleName()+" in "+ getClass().getSimpleName() +"ms "+ profiler.elapsedTime() / 1000 / 1000);
-			
+
 		return lst;	
 	}
 

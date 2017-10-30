@@ -1,8 +1,10 @@
 package org.scada_lts.cache;
 
-import java.util.List;
-
 import com.serotonin.mango.vo.DataPointVO;
+import org.quartz.SchedulerException;
+
+import java.io.IOException;
+import java.util.List;
 
 public interface IDataPointsCacheWhenStart {
 	
@@ -11,6 +13,8 @@ public interface IDataPointsCacheWhenStart {
 	void cacheInitialize();
 	 
 	void cacheFinalized();
+
+	void cronInitialize() throws IOException, SchedulerException;
 	
 	
 	

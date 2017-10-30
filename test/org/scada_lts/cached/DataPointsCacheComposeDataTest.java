@@ -1,11 +1,6 @@
 package org.scada_lts.cached;
 
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import com.serotonin.mango.vo.DataPointVO;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,7 +8,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.scada_lts.cache.DataPointsCache;
 
-import com.serotonin.mango.vo.DataPointVO;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JUnit4.class)
 public class DataPointsCacheComposeDataTest {
@@ -25,7 +24,7 @@ public class DataPointsCacheComposeDataTest {
 	
 	@After
 	public void finalized() {
-		DataPointsCache.getInstance().cacheFinalized();
+		//DataPointsCache.getInstance().cacheFinalized();
 	}
 	
 	@Test
